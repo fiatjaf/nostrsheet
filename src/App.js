@@ -77,8 +77,22 @@ function App() {
   )
 
   function handleCellsChanged(changes) {
-    changes.forEach(async ({cell, row, col, value}) => {
-      grid[row][col] = await computeCell(value, grid)
+    changes.forEach(async ({cell, row: rowN, col: colN, value}) => {
+      let computed = computeCell(value, grid)
+      if (computed.then) {
+        // is a promise
+        grid[rowN][colN].value = value
+        grid[rowN][colN].computed = '...' // we set stuff as loading and then wait for the promise to resolve
+        ;((row, colN) => {
+          computed.then(awaitedComputed => {
+            row[colN] = awaitedComputed
+            setGrid(grid)
+          })
+        })(grid[rowN], colN)
+      } else {
+        // it's a direct value
+        grid[rowN][colN] = computed
+      }
     })
     setGrid([...grid])
   }
