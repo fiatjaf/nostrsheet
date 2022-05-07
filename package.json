@@ -4,32 +4,26 @@
   "private": true,
   "dependencies": {
     "buffer": "^6.0.3",
+    "chokidar": "^3.5.3",
+    "esbuild-dev-server": "^0.3.0",
+    "events": "^3.3.0",
+    "live-server": "^1.2.2",
+    "nostr-tools": "^0.23.0",
     "react": "^18.1.0",
     "react-datasheet": "^1.4.9",
     "react-dom": "^18.1.0",
-    "react-qr-code": "^2.0.7",
-    "react-scripts": "5.0.1",
+    "readable-stream": "^3.6.0",
     "styled-components": "^5.3.5"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "browserslist": {
-    "production": [
-      ">10%",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
+    "esbuild": "^0.14.38",
+    "esbuild-plugin-alias": "^0.2.1",
     "eslint-plugin-babel": "^5.3.1",
     "eslint-plugin-react": "^7.29.4"
+  },
+  "scripts": {
+    "build": "./build.js prod",
+    "watch": "find src | entr ./build.js"
   }
 }

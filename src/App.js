@@ -1,34 +1,87 @@
-import React, {useState} from 'react'
-import ReactDataSheet from 'react-datasheet'
+import React, {useState, useEffect} from 'react'
+import DataSheet from 'react-datasheet'
 import styled from 'styled-components'
+import {relayPool} from 'nostr-tools'
+
+import {computeCell} from './compute'
+
+const pool = relayPool()
 
 const Wrapper = styled.div`
   margin: 12px;
 `
 
+const defaultGrid = [
+  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}],
+  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}],
+  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}],
+  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}]
+]
+
 function App() {
-  const [grid, setGrid] = useState([
-    [{value: ''}, {value: 0}],
-    [{value: '0'}, {value: ''}]
-  ])
+  const [nip7, setNIP7] = useState(false)
+  const [grid, setGrid] = useState(defaultGrid)
+
+  useEffect(() => {
+    setTimeout(() => {
+      setNIP7(!!window.nostr)
+    }, 500)
+  }, [])
+
+  useEffect(() => {
+    if (grid === defaultGrid) return
+    localStorage.setItem('data', JSON.stringify(grid))
+  }, [grid])
+
+  useEffect(() => {
+    setTimeout(async () => {
+      const loadedGrid = JSON.parse(localStorage.getItem('data') || 'null')
+      if (loadedGrid) {
+        setGrid(
+          await Promise.all(
+            loadedGrid.map(row =>
+              Promise.all(row.map(cell => computeCell(cell.value, grid)))
+            )
+          )
+        )
+      }
+    }, 1)
+  }, [])
+
+  if (!nip7) {
+    return (
+      <div>
+        please install{' '}
+        <a href="https://chrome.google.com/webstore/detail/nos2x/kpgefcfmnafjgpblomihpgmejjdanjjp">
+          nos2x
+        </a>{' '}
+        or another{' '}
+        <a href="https://github.com/nostr-protocol/nips/blob/master/07.md">
+          NIP-07
+        </a>{' '}
+        compatible extension.
+      </div>
+    )
+  }
 
   return (
     <Wrapper>
-      <div>Hello</div>
       <div>
-        <ReactDataSheet
+        <DataSheet
           data={grid}
-          valueRenderer={cell => cell.value}
-          onCellsChanged={changes => {
-            changes.forEach(({cell, row, col, value}) => {
-              grid[row][col] = {...grid[row][col], value}
-            })
-            setGrid(grid)
-          }}
+          valueRenderer={cell => cell.computed || cell.value}
+          onCellsChanged={handleCellsChanged}
         />
       </div>
     </Wrapper>
   )
+
+  function handleCellsChanged(changes) {
+    changes.forEach(async ({cell, row, col, value}) => {
+      grid[row][col] = await computeCell(value, grid)
+    })
+    setGrid([...grid])
+  }
 }
 
 export default App
