@@ -4,10 +4,8 @@
   "private": true,
   "dependencies": {
     "buffer": "^6.0.3",
-    "chokidar": "^3.5.3",
     "esbuild-dev-server": "^0.3.0",
     "events": "^3.3.0",
-    "live-server": "^1.2.2",
     "nostr-tools": "^0.23.0",
     "react": "^18.1.0",
     "react-datasheet": "^1.4.9",
@@ -20,7 +18,8 @@
     "esbuild": "^0.14.38",
     "esbuild-plugin-alias": "^0.2.1",
     "eslint-plugin-babel": "^5.3.1",
-    "eslint-plugin-react": "^7.29.4"
+    "eslint-plugin-react": "^7.29.4",
+    "live-server": "^1.2.2"
   },
   "scripts": {
     "build": "./build.js prod",
