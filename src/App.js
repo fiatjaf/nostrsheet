@@ -1,26 +1,17 @@
 import React, {useState, useEffect} from 'react'
 import DataSheet from 'react-datasheet'
 import styled from 'styled-components'
-import {relayPool} from 'nostr-tools'
 
-import {computeCell} from './compute'
-
-const pool = relayPool()
+import {grid, computeCell} from './compute'
 
 const Wrapper = styled.div`
   margin: 12px;
 `
 
-const defaultGrid = [
-  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}],
-  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}],
-  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}],
-  [{value: ''}, {value: ''}, {value: ''}, {value: ''}, {value: ''}]
-]
-
 function App() {
   const [nip7, setNIP7] = useState(false)
-  const [grid, setGrid] = useState(defaultGrid)
+  const [updateCount, setUpdateCount] = useState(0)
+  const bumpGrid = () => setUpdateCount(i => i + 1)
 
   useEffect(() => {
     setTimeout(() => {
@@ -29,21 +20,25 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (grid === defaultGrid) return
+    if (updateCount === 0) return
     localStorage.setItem('data', JSON.stringify(grid))
-  }, [grid])
+  }, [updateCount])
 
   useEffect(() => {
     setTimeout(async () => {
       const loadedGrid = JSON.parse(localStorage.getItem('data') || 'null')
       if (loadedGrid) {
-        setGrid(
-          await Promise.all(
-            loadedGrid.map(row =>
-              Promise.all(row.map(cell => computeCell(cell.value, grid)))
-            )
-          )
-        )
+        // replace grid
+        for (let i = 0; i < loadedGrid.length; i++) {
+          grid[i] = loadedGrid[i]
+        }
+
+        // calculate formulas
+        for (let i = 0; i < grid.length; i++) {
+          for (let j = 0; j < grid[i].length; j++) {
+            runComputeCell(grid[i][j].value, i, j)
+          }
+        }
       }
     }, 1)
   }, [])
@@ -69,32 +64,41 @@ function App() {
       <div>
         <DataSheet
           data={grid}
-          valueRenderer={cell => cell.computed || cell.value}
+          dataRenderer={cell => cell.value || ''}
+          valueRenderer={cell => cell.computed || cell.value || ''}
           onCellsChanged={handleCellsChanged}
         />
       </div>
     </Wrapper>
   )
 
-  function handleCellsChanged(changes) {
-    changes.forEach(async ({cell, row: rowN, col: colN, value}) => {
-      let computed = computeCell(value, grid)
-      if (computed.then) {
-        // is a promise
-        grid[rowN][colN].value = value
-        grid[rowN][colN].computed = '...' // we set stuff as loading and then wait for the promise to resolve
-        ;((row, colN) => {
-          computed.then(awaitedComputed => {
+  function runComputeCell(value, rowN, colN) {
+    let computed = computeCell(value || '', {row: rowN + 1, col: colN + 1})
+    if (computed.then) {
+      // is a promise
+      grid[rowN][colN].value = value
+      grid[rowN][colN].computed = '...' // we set stuff as loading and then wait for the promise to resolve
+      ;((row, colN) => {
+        computed
+          .then(awaitedComputed => {
             row[colN] = awaitedComputed
-            setGrid(grid)
+            bumpGrid()
           })
-        })(grid[rowN], colN)
-      } else {
-        // it's a direct value
-        grid[rowN][colN] = computed
-      }
+          .catch(err => {
+            row[colN] = `${err}`
+            bumpGrid()
+          })
+      })(grid[rowN], colN)
+    } else {
+      // it's a direct value
+      grid[rowN][colN] = computed
+    }
+  }
+
+  function handleCellsChanged(changes) {
+    changes.forEach(({row: rowN, col: colN, value}) => {
+      runComputeCell(value, rowN, colN)
     })
-    setGrid([...grid])
   }
 }
 
