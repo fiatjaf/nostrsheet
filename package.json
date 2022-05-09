@@ -18,11 +18,10 @@
     "esbuild": "^0.14.38",
     "esbuild-plugin-alias": "^0.2.1",
     "eslint-plugin-babel": "^5.3.1",
-    "eslint-plugin-react": "^7.29.4",
-    "live-server": "^1.2.2"
+    "eslint-plugin-react": "^7.29.4"
   },
   "scripts": {
     "build": "./build.js prod",
-    "watch": "find src | entr ./build.js"
+    "watch": "./build.js watch"
   }
 }
